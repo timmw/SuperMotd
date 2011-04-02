@@ -5,31 +5,39 @@
 #define AUTHOR		"timmw"
 #define VERSION		"0.1.0"
 
-// A buffer to hole the contents of /configs/supermotd/templates/style.css
-new g_cssCache[512] = ""
+// Maximum characters in style.css
+#define MAX_CSS_FILE_SIZE 512
 
-public plugin_init(){
+// A buffer to hole the contents of /configs/supermotd/templates/style.css
+new g_CSSCache[MAX_CSS_FILE_SIZE] = ""
+
+public plugin_init()
+{
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	register_clcmd("say /help", "cmdHelp")
-	register_clcmd("say_team /help", "cmdHelp")
-	register_clcmd("say", "sayHandler")
-	register_clcmd("say_team", "sayHandler")
 	
-	register_clcmd("smotd_purge_cache", "purgeCache", ADMIN_RCON, "Purge the cache files.")
+	register_clcmd("say /help", "ShowHelp")
+	register_clcmd("say_team /help", "ShowHelp")
+	
+	register_clcmd("say", "SayHandler")
+	register_clcmd("say_team", "SayHandler")
+	
+	register_clcmd("smotd_purge_cache", "PurgeCache", ADMIN_RCON, "Purge the cache files.")
 }
 
 public plugin_end()
 {
-	purgeCache()
+	PurgeCache()
 }
 
-public getCss()
+// Read the style.css into a string and place it in g_CSSCache
+public GetCSS()
 {
-	new cssPath[128]
-	get_configsdir(cssPath, 127)
-	formatex(cssPath, 127, "%s/supermotd/templates/style.css", cssPath)
+	new CSSPath[128]
+	get_configsdir(CSSPath, 127)
+	formatex(CSSPath, 127, "%s/supermotd/templates/style.css", CSSPath)
+	
 	new line = 0, textline[256], len, content[512]
-	while((line = read_file(cssPath, line, textline, 255, len)))
+	while((line = read_file(CSSPath, line, textline, 255, len)))
 	{
 		add(content, 511, textline)
 	}
@@ -37,17 +45,17 @@ public getCss()
 	trim(content)
 	replace_all(content, 511, "^t", "")
 	
-	copy(g_cssCache, 511, content)
+	copy(g_CSSCache, 511, content)
 }
 
-public purgeCache()
+public PurgeCache()
 {
 	new cacheDir[128]
 	get_configsdir(cacheDir, 127)
 	formatex(cacheDir, 127, "%s/supermotd/cache/", cacheDir)
+	
 	new fileName[64]
 	new dh = open_dir(cacheDir, fileName, 63)
-	
 	while(next_file(dh, fileName, 63))
 	{
 		if(equal(fileName, ".") || equal(fileName, ".."))
@@ -71,35 +79,46 @@ public purgeCache()
 	return PLUGIN_HANDLED
 }
 
-public cmdHelp(id)
+public ShowHelp(id)
 {
-	new templateDir[64]
-	get_configsdir(templateDir, 63)
-	format(templateDir, 63, "%s/supermotd/templates/", templateDir)
-
-	new fileName[64]
-	new dh = open_dir(templateDir, fileName, 63)
+	new helpFileCachePath[64]
+	get_configsdir(helpFileCachePath, 63)
+	format(helpFileCachePath, 63, "%s/supermotd/cache/help.html", helpFileCachePath)
 	
-	new cmds[256]
-	while(next_file(dh, fileName, 63))
+	if(file_exists(helpFileCachePath) == 0)
 	{
-		if(equal(fileName, ".") || equal(fileName, "..") || equal(fileName, "style.css"))
-		{
-			continue
-		}
-		trim(fileName)		
-		replace(fileName, 63, ".html", "<br />")
-		
-		new cmd[32]
-		formatex(cmd, 255, "/%s<br/>", fileName)
-		add(cmds, 255, cmd)
-	}
-	close_dir(dh)
+		new templateDir[64]
+		get_configsdir(templateDir, 63)
+		format(templateDir, 63, "%s/supermotd/templates/", templateDir)
 	
-	show_motd(id, cmds)
+		new fileName[64]
+		new dh = open_dir(templateDir, fileName, 63)
+		
+		new cmds[256]
+		while(next_file(dh, fileName, 63))
+		{
+			if(equal(fileName, ".") || equal(fileName, "..") || equal(fileName, "style.css"))
+			{
+				continue
+			}
+			trim(fileName)		
+			replace(fileName, 63, ".html", "<br />")
+			
+			new cmd[32]
+			formatex(cmd, 255, "/%s<br/>", fileName)
+			add(cmds, 255, cmd)
+		}
+		close_dir(dh)
+		
+		write_file(helpFileCachePath, cmds)
+		
+		log_amx("Help cache file created.")
+	}
+	
+	show_motd(id, helpFileCachePath)
 }
 
-public sayHandler(id)
+public SayHandler(id)
 {
 	new tpl[191]
 	read_args(tpl, 190)
@@ -129,7 +148,7 @@ public sayHandler(id)
 		else
 		{
 			// If it hasn't been cached
-			createCacheFile(tplPath, cachePath)
+			CreateCacheFile(tplPath, cachePath)
 			show_motd(id, cachePath)
 		}
 	}
@@ -137,7 +156,7 @@ public sayHandler(id)
 	return PLUGIN_CONTINUE
 }
 
-public createCacheFile(tplPath[], cachePath[])
+public CreateCacheFile(tplPath[], cachePath[])
 {	
 	new line = 0, textline[256], len, content[2000]
 	while((line = read_file(tplPath, line, textline, 255, len)))
@@ -145,12 +164,16 @@ public createCacheFile(tplPath[], cachePath[])
 		add(content, 1999, textline)
 	}
 	
-	getCss()
+	GetCSS()
 	
-	replace_all(content, 1999, "^t", "")
-	replace(content, 1999, "{stylesheet}", g_cssCache)
+	// Insert the styles into the motd string
+	replace(content, 1999, "{stylesheet}", g_CSSCache)
+	
 	replace(content, 1999, "{plugin}", PLUGIN)
 	replace(content, 1999, "{author}", AUTHOR)
+	
+	// Remove all tabs from the motd string
+	replace_all(content, 1999, "^t", "")
 	
 	trim(content)
 	
