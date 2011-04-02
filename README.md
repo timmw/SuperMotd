@@ -17,11 +17,11 @@ isn't ready for use in the real world yet!**
 
 2. Create a file inside configs/supermotd/templates
 
-3. Add superbank.amxx into plugins.ini
+3. Add supermotd.amxx into plugins.ini
 
 4. Restart your server
 
-*Congratulations! You have installed SuperBank!*
+*Congratulations! You have installed SuperMotd!*
 
 ## Commands
 
