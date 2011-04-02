@@ -27,4 +27,4 @@ isn't ready for use in the real world yet!**
 
 * /help - Displays a motd showing all available motds
 
-* /<yourfilename> (without the extension) - Displays the motds corresponding to the file in configs/supermotd/templates
+* /&lt;your&#95;file&#95;name&gt; (without the extension) - Displays the motds corresponding to the file in configs/supermotd/templates
