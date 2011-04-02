@@ -15,7 +15,7 @@ isn't ready for use in the real world yet!**
 
 1. Upload the files to the appropriate places
 
-2. Create a file inside configs/supermotd/templates
+2. Create a file inside configs/supermotd/templates (with .html extension, doesn't need to be html formatted)
 
 3. Add supermotd.amxx into plugins.ini
 
