@@ -1,0 +1,5 @@
+# compile.bat used for compiling plugin locally
+compile.bat
+project.bat
+configs/supermotd/cache/*
+configs/supermotd/templates/*
