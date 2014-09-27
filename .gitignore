@@ -2,3 +2,4 @@
 plugins/*
 configs/supermotd/cache/*
 configs/supermotd/templates/*
+*.komodoproject
